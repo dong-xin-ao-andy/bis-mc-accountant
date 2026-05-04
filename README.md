@@ -1,4 +1,4 @@
-# What is the Optimal Subsampling Scheme for DP-SGD? Theory and Near-Exact Accounting
+# Less Random, More Private: What is the Optimal Subsampling Scheme for DP-SGD?
 
 This repository contains the official code for the paper **[Less Random, More Private: What is the Optimal Subsampling Scheme for DP-SGD?]**, authored by Andy Dong and Ayfer Özgür (Stanford University, 2026).
 
