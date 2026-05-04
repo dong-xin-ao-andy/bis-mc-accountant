@@ -1,6 +1,6 @@
 # What is the Optimal Subsampling Scheme for DP-SGD? Theory and Near-Exact Accounting
 
-This repository contains the official code for the paper **[What is the Optimal Subsampling Scheme for DP-SGD? Theory and Near-Exact Accounting]**, authored by Andy Dong and Ayfer Özgür (Stanford University, 2026).
+This repository contains the official code for the paper **[Less Random, More Private: What is the Optimal Subsampling Scheme for DP-SGD?]**, authored by Andy Dong and Ayfer Özgür (Stanford University, 2026).
 
 ## Overview
 
@@ -76,8 +76,8 @@ python bis_calibration.py \
 If you use this code or our theoretical results in your research, please cite our paper:
 
 ```bibtex
-@article{dong2026optimal,
-  title={What is the Optimal Subsampling Scheme for DP-SGD? Theory and Near-Exact Accounting},
+@article{dong2026less,
+  title={Less Random, More Private: What is the Optimal Subsampling Scheme for DP-SGD?},
   author={Dong, Andy and {\"O}zg{\"u}r, Ayfer},
   journal={arXiv preprint},
   year={2026}
