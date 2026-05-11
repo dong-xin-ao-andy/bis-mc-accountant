@@ -79,7 +79,7 @@ If you use this code or our theoretical results in your research, please cite ou
 @article{dong2026less,
   title={Less Random, More Private: What is the Optimal Subsampling Scheme for DP-SGD?},
   author={Dong, Andy and {\"O}zg{\"u}r, Ayfer},
-  journal={arXiv preprint},
+  journal={arXiv preprint arXiv:2605.07072},
   year={2026}
 }
 ```
