@@ -1,0 +1,21 @@
+{
+  "T": 2000,
+  "active_count": 0,
+  "active_fraction": 0.0,
+  "audit_active_count": 267,
+  "audit_active_fraction": 0.000267,
+  "audit_operation_model_speedup": 557.5013724747529,
+  "audit_samples": 1000000,
+  "epsilon": 3.0,
+  "exact_seconds_median": 20.141682000015862,
+  "hockey_stick_sum": 0.0,
+  "k": 655,
+  "likelihood_stage_speedup": 1664.7256427066834,
+  "numpy_version": "1.26.3",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "python_version": "3.12.13",
+  "repeats": 7,
+  "samples": 512,
+  "screened_seconds_median": 0.012099099985789508,
+  "sigma": 20.5
+}

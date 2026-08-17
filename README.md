@@ -1,83 +1,134 @@
-# Less Random, More Private: What is the Optimal Subsampling Scheme for DP-SGD?
+# BIS Monte Carlo Accountant
 
-This repository contains the official code for the paper **[Less Random, More Private: What is the Optimal Subsampling Scheme for DP-SGD?]**, authored by Andy Dong and Ayfer Özgür (Stanford University, 2026).
+This repository contains the implementation accompanying **[Less Random, More
+Private: A Design Theory for Independent-Example Subsampling in
+DP-SGD](https://arxiv.org/abs/2605.07072)** by Andy Dong and Ayfer Özgür.
 
-## Overview
+Balanced Iteration Subsampling (BIS), also called random allocation, lets each
+example independently choose a uniformly random `k`-subset of `T` training
+iterations. The paper characterizes why fixing participation counts can improve
+privacy in low-noise regimes, proves exact finite-noise optimality of BIS among
+fixed-count participation laws, and gives a complementary local high-noise
+hierarchy. The claims are scoped to the independent-example family and the
+zero-out Gaussian dominating pair; they are not universal claims over fixed-size
+minibatches, reshuffling, or replacement adjacency.
 
-For a decade, Poisson subsampling has been the default mechanism for differentially private machine learning (DP-SGD). In our work, we prove that under a fixed expected participation constraint, the optimal sampling scheme in high-utility, low-noise regimes must strictly eliminate participation variance. This establishes **Balanced Iteration Subsampling (BIS)** as the mathematically optimal independent-example mechanism.
+The accountant evaluates the full BIS Gaussian-mixture likelihood. It combines:
 
-To bypass the analytical slack of existing composition-based RDP and PLD accountants, this repository provides a practical, near-exact **Monte Carlo accounting framework**. It is powered by:
-1. An highly efficient `O(Tk)` dynamic program for exact log-likelihood ratio evaluation.
-2. An ultra-fast `O(T)` screening bound that acts as a computational filter.
+1. an `O(Tk)` log-domain elementary-symmetric-polynomial dynamic program;
+2. an `O(T)` arithmetic-mean screen for the forward hockey-stick divergence;
+3. an `O(T)` geometric-mean screen for the reverse divergence; and
+4. ordered Estimate--Verify--Release (EVR) calibration.
 
-This tool provides near-exact numerical evidence establishing BIS as a strictly superior alternative to Poisson sampling in practical DP-SGD regimes.
+Both privacy directions are checked by default. Screening only avoids exact
+evaluations whose hockey-stick contribution is provably zero; it does not alter
+the estimator.
 
-## Repository Structure
+## Repository structure
 
 ```text
-├── README.md
+├── bis_calibration.py                     # Two-sided calibration CLI
+├── symmetric_polynomial.py                # Exact likelihood and two screens
+├── delta_calculation.py                   # EVR statistical calculations
+├── ACCOUNTING.md                          # Guarantee/implementation details
+├── benchmark_screening.py                 # Screening benchmark
+├── benchmark_screening_results.json       # Recorded benchmark output
+├── submit_bis_calibration.sbatch          # Example fixed configuration
+├── submit_bis_calibration_template.sbatch # Environment-variable template
+├── run_example.sh                         # Small local demonstration
 ├── requirements.txt
-├── run_example.sh            # Quick start demonstration script
-├── bis_calibration.py        # Main CLI tool for Monte Carlo calibration
-├── symmetric_polynomial.py   # Core logic for DP evaluation and screening
-└── delta_calculation.py      # Statistical EVR verification functions
+└── tests/test_bis_accounting.py
 ```
 
-## Installation
+## Installation and tests
 
-This codebase was tested on **Python 3.11.5**. To install the required dependencies (`numpy` and `scipy`), run:
+The revised code was tested with Python 3.12.13, NumPy 1.26.3, and SciPy 1.12.0.
 
 ```bash
-pip install -r requirements.txt
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+python -m pip install -r requirements.txt
+python -m unittest discover -s tests -v
 ```
 
-## Quick Start
-
-To verify that your environment is set up correctly and see the calibrator in action, run the included example shell script. This executes a fast, small-scale sweep that outputs both the rigorous certified bounds and the optimistic estimates:
+## Quick start
 
 ```bash
 bash run_example.sh
 ```
 
-## Usage: Running the Calibrator
+Equivalently:
 
-`bis_calibration.py` is a command-line tool that performs a sequential line search to find the minimum required noise multiplier (`sigma`) to satisfy a target `(ε, δ)`-DP guarantee. It utilizes multiprocessing to heavily parallelize the Monte Carlo sampling.
-
-**Example Command:**
 ```bash
 python bis_calibration.py \
-    --eps 8.0 \
-    --delta 1.25e-5 \
-    --T 391 \
-    --k 5 \
-    --initial-sigma 0.60 \
-    --sigma-step 0.05 \
-    --min-sigma 0.50 \
-    --samples-per-sigma 2000000 \
-    --num-workers 4
+  --eps 8.0 \
+  --delta 1.25e-5 \
+  --T 391 \
+  --k 5 \
+  --initial-sigma 0.60 \
+  --sigma-step 0.05 \
+  --min-sigma 0.50 \
+  --samples-per-sigma 2000000 \
+  --num-workers 4 \
+  --directions both
 ```
 
-### Key Arguments:
-* `--eps`, `--delta`: Your target privacy budget.
-* `--T`: Total number of training iterations.
-* `--k`: Exact number of participations per example (for BIS).
-* `--initial-sigma`, `--min-sigma`, `--sigma-step`: The parameters defining the line search for the noise multiplier. The search sweeps from `initial-sigma` downwards.
-* `--samples-per-sigma`: Number of Monte Carlo samples to generate per candidate noise multiplier.
-* `--num-workers`: Number of parallel CPU processes to use. *(Note: If running on a Slurm cluster, this will automatically default to `$SLURM_CPUS_PER_TASK` if not explicitly provided.)*
-* `--run-optimistic`: (Optional flag) If included, the script will simultaneously compute and sweep based on unbiased optimistic Monte Carlo estimates, representing the fundamental privacy limit given unlimited compute.
+Candidates must be ordered from more private to less private. The sweep freezes
+at its first failure and returns the last passing grid point. This is a certified
+selection from the supplied ordered grid, not a proof that no smaller noise
+multiplier could work. If the first candidate fails, the certified result is a
+data-independent no-training fallback.
 
-## Acknowledgments and Licensing
+The CLI also reports raw empirical, or "optimistic," outcomes for diagnosis.
+Those values are not end-to-end DP guarantees.
 
-* The exact sampling algorithms and DP evaluations are provided in `symmetric_polynomial.py` and `bis_calibration.py`.
-* `delta_calculation.py` is included here as a standalone copy to ensure repository stability. It is originally derived from Google DeepMind's privacy libraries and remains subject to the Apache 2.0 license provided in its header.
+### Important arguments
+
+- `--directions both` is the default and checks `H(P||Q)` and `H(Q||P)` using
+  independent samples. `--directions forward` is diagnostic/reproduction-only.
+- Omitting `--seed` uses fresh OS entropy, as required by the operational
+  randomized EVR guarantee. A fixed `--seed` is useful for reproducible research
+  but does not itself instantiate that information-theoretic randomized pipeline.
+- If `--num-workers` is omitted, the CLI uses `SLURM_CPUS_PER_TASK` when set and
+  otherwise uses one worker.
+- `--samples-per-sigma` is the number of verifier draws **per direction and per
+  candidate**.
+
+See [ACCOUNTING.md](ACCOUNTING.md) for the precise adjacency model, directional
+estimands, stopping/fallback rule, randomness requirements, and numerical
+limitations.
+
+## Benchmark
+
+```bash
+python benchmark_screening.py \
+  --T 2000 --k 655 --sigma 20.5 --epsilon 3 \
+  --samples 512 --repeats 7 --audit-samples 1000000
+```
+
+The benchmark isolates likelihood evaluation; it is not an end-to-end
+calibration runtime measurement. The checked-in JSON records one run of the
+released log-domain implementation.
+
+## Numerical scope
+
+The mathematical recurrence and screens are exact identities over the reals.
+The implementation uses NumPy pseudorandomness, binary64 arithmetic, and
+floating-point Gaussian samples without directed rounding. EVR controls
+statistical verification error in the ideal sampling model; it does not turn
+ordinary floating-point evaluation into a bit-level formal certificate.
+
+## Licensing
+
+The repository is MIT licensed. `delta_calculation.py` is derived from Google
+DeepMind privacy code and retains its Apache 2.0 header and terms.
 
 ## Citation
 
-If you use this code or our theoretical results in your research, please cite our paper:
-
 ```bibtex
 @article{dong2026less,
-  title={Less Random, More Private: What is the Optimal Subsampling Scheme for DP-SGD?},
+  title={Less Random, More Private: A Design Theory for Independent-Example
+         Subsampling in DP-SGD},
   author={Dong, Andy and {\"O}zg{\"u}r, Ayfer},
   journal={arXiv preprint arXiv:2605.07072},
   year={2026}

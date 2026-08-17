@@ -262,16 +262,19 @@ def perform_calibration_from_samples(
   Args:
     epsilon: The epsilon parameter of the target DP guarantee.
     delta: The delta parameter of the target DP guarantee.
-    positive_samples: A list of lists of privacy loss samples from the positive
-      case, one list for each hyperparameter value.
+    positive_samples: Forward privacy-loss samples, one list for each
+      hyperparameter value. For neighboring output laws P and Q, each entry is
+      log(P(x) / Q(x)) for an independent draw x from P. These estimate
+      H_{exp(epsilon)}(P || Q).
     positive_counts: An optional list of lists of counts corresponding to each
       of the lists of positive samples. If None, we assume the samples are count
       1. If passed, each list should be the same length as the associated list
       of positive_samples.
-    negative_samples: An optional list of lists of privacy loss samples from the
-      negative case, one list for each hyperparameter value. If None, this means
-      we assume the positive case has a worse DP guarantee than the negative
-      case, so we only need to do accounting for the positive case.
+    negative_samples: Optional reverse privacy-loss samples, one list for each
+      hyperparameter value. Each entry is log(Q(x) / P(x)) for an independent
+      draw x from Q. These estimate H_{exp(epsilon)}(Q || P). If None, the
+      caller is explicitly assuming that the forward profile dominates and is
+      requesting only a one-sided verification.
     negative_counts: An optional list of lists of counts corresponding to each
       of the lists of negative samples. If None, we assume the samples are
       unweighted. If passed, each list should be the same length as the
